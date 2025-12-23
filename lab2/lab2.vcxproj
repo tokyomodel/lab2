@@ -124,6 +124,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Cs.cpp" />
+    <ClCompile Include="GasNetwork.cpp" />
     <ClCompile Include="lab2.cpp" />
     <ClCompile Include="Loger.cpp" />
     <ClCompile Include="Sistem.cpp" />
@@ -131,6 +132,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Cs.h" />
+    <ClInclude Include="GasNetwork.h" />
     <ClInclude Include="Loger.h" />
     <ClInclude Include="Sistem.h" />
     <ClInclude Include="Truba.h" />

@@ -20,6 +20,18 @@ double Cs::getUnusedPercentage() const {
     return ((totalWorkshops - workingWorkshops) * 100.0) / totalWorkshops;
 }
 
+// Сеттеры (новые)
+void Cs::setId(int newId) {
+    id = newId;
+    if (newId >= nextId) {
+        nextId = newId + 1;
+    }
+}
+void Cs::setName(const std::string& n) { name = n; }
+void Cs::setTotalWorkshops(int total) { totalWorkshops = total; }
+void Cs::setWorkingWorkshops(int working) { workingWorkshops = working; }
+void Cs::setStationClass(const std::string& cls) { stationClass = cls; }
+
 void Cs::input() {
     std::cout << "Введите название КС: ";
     std::getline(std::cin, name);

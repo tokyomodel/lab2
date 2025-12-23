@@ -1,10 +1,19 @@
 #include "Sistem.h"
+#include "GasNetwork.h"
 #include "Loger.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <algorithm>
 #include <set>
+
+DataManager::DataManager() {
+    network = new GasNetwork();
+}
+
+DataManager::~DataManager() {
+    delete network;
+}
 
 // Методы для труб
 void DataManager::addTube() {
@@ -148,6 +157,100 @@ void DataManager::batchDeleteTubes(const std::vector<int>& tubeIds) {
     }
 }
 
+// НОВЫЕ МЕТОДЫ ДЛЯ СЕТИ
+void DataManager::connectStations() {
+    std::cout << "=== СОЕДИНЕНИЕ КС ===\n";
+
+    if (stations.size() < 2) {
+        std::cout << "Недостаточно КС для соединения! Нужно минимум 2.\n";
+        return;
+    }
+
+    int fromId = Tube::inputInt("Введите ID КС входа: ", 1);
+    int toId = Tube::inputInt("Введите ID КС выхода: ", 1);
+
+    // Проверяем существование КС
+    if (!getStationById(fromId) || !getStationById(toId)) {
+        std::cout << "Одна или обе КС не найдены!\n";
+        return;
+    }
+
+    if (fromId == toId) {
+        std::cout << "Нельзя соединить КС саму с собой!\n";
+        return;
+    }
+
+    // Запрашиваем диаметр
+    std::cout << "Введите диаметр трубы (500, 700, 1000 или 1400 мм): ";
+    int diameter = Tube::inputInt("", 500);
+
+    // Ищем свободную трубу
+    int tubeId = network->findFreeTube(diameter, tubes);
+
+    if (tubeId == -1) {
+        std::cout << "Свободной трубы нужного диаметра не найдено.\n";
+        std::cout << "Создать новую трубу? (yes/no): ";
+        std::string answer;
+        std::getline(std::cin, answer);
+
+        if (answer == "yes") {
+            Tube newTube;
+            newTube.input();
+            newTube.setDiameter(diameter);
+            newTube.setUnderRepair(false);
+            tubes.push_back(newTube);
+            tubeId = newTube.getId();
+            std::cout << "Создана новая труба ID: " << tubeId << "\n";
+        }
+        else {
+            return;
+        }
+    }
+
+    // Добавляем соединение
+    network->addConnection(fromId, toId, tubeId, diameter);
+
+    // Помечаем трубу как используемую
+    auto tube = getTubeById(tubeId);
+    if (tube) {
+        tube->setUnderRepair(false);
+    }
+}
+
+void DataManager::disconnectStations() {
+    std::cout << "=== ОТСОЕДИНЕНИЕ КС ===\n";
+
+    int fromId = Tube::inputInt("Введите ID КС входа: ", 1);
+    int toId = Tube::inputInt("Введите ID КС выхода: ", 1);
+
+    network->removeConnection(fromId, toId);
+}
+
+void DataManager::showNetwork() {
+    network->displayConnections(*this);
+}
+
+void DataManager::topologicalSort() {
+    std::cout << "=== ТОПОЛОГИЧЕСКАЯ СОРТИРОВКА ===\n";
+
+    auto sorted = network->topologicalSort();
+
+    if (sorted.empty()) {
+        std::cout << "Граф пуст или содержит циклы.\n";
+        return;
+    }
+
+    std::cout << "Порядок обработки КС:\n";
+    for (size_t i = 0; i < sorted.size(); i++) {
+        const Cs* station = getStationById(sorted[i]);
+        std::cout << i + 1 << ". КС " << sorted[i];
+        if (station) {
+            std::cout << " (" << station->getName() << ")";
+        }
+        std::cout << "\n";
+    }
+}
+
 // Отображение
 void DataManager::displayAll() const {
     std::cout << "=== ТРУБЫ ===\n";
@@ -169,6 +272,7 @@ void DataManager::displayAll() const {
             station.display();
         }
     }
+
     std::cout << "----------------------\n";
 }
 
@@ -200,6 +304,16 @@ void DataManager::saveToFile(const std::string& filename) {
             << station.getStationClass() << "\n";
     }
 
+    // Сохраняем соединения
+    const auto& conns = network->getConnections();
+    file << conns.size() << "\n";
+    for (const auto& conn : conns) {
+        file << conn.fromCsId << "\n"
+            << conn.toCsId << "\n"
+            << conn.tubeId << "\n"
+            << conn.diameter << "\n";
+    }
+
     file.close();
     std::cout << "Данные сохранены в файл: " << filename << "\n";
     logger.log("Сохранение данных в файл: " + filename);
@@ -214,6 +328,8 @@ void DataManager::loadFromFile(const std::string& filename) {
 
     tubes.clear();
     stations.clear();
+    delete network;
+    network = new GasNetwork();
 
     // Загружаем трубы
     int tubeCount;
@@ -245,7 +361,6 @@ void DataManager::loadFromFile(const std::string& filename) {
     file >> stationCount;
     file.ignore();
     for (int i = 0; i < stationCount; i++) {
-        Cs station;
         int id;
         std::string name;
         int totalWorkshops, workingWorkshops;
@@ -258,8 +373,25 @@ void DataManager::loadFromFile(const std::string& filename) {
         file.ignore();
         std::getline(file, stationClass);
 
-        // В реальном приложении нужно установить значения через сеттеры
+        Cs station;
+        station.setId(id);
+        station.setName(name);
+        station.setTotalWorkshops(totalWorkshops);
+        station.setWorkingWorkshops(workingWorkshops);
+        station.setStationClass(stationClass);
+
         stations.push_back(station);
+    }
+
+    // Загружаем соединения
+    int connCount;
+    file >> connCount;
+    file.ignore();
+    for (int i = 0; i < connCount; i++) {
+        int fromId, toId, tubeId, diameter;
+        file >> fromId >> toId >> tubeId >> diameter;
+        file.ignore();
+        network->addConnection(fromId, toId, tubeId, diameter);
     }
 
     file.close();
@@ -273,7 +405,26 @@ Tube* DataManager::getTubeById(int id) {
     return it != tubes.end() ? &(*it) : nullptr;
 }
 
+const Tube* DataManager::getTubeById(int id) const {
+    auto it = std::find_if(tubes.begin(), tubes.end(), [id](const Tube& t) { return t.getId() == id; });
+    return it != tubes.end() ? &(*it) : nullptr;
+}
+
 Cs* DataManager::getStationById(int id) {
     auto it = std::find_if(stations.begin(), stations.end(), [id](const Cs& s) { return s.getId() == id; });
     return it != stations.end() ? &(*it) : nullptr;
+}
+
+const Cs* DataManager::getStationById(int id) const {
+    auto it = std::find_if(stations.begin(), stations.end(), [id](const Cs& s) { return s.getId() == id; });
+    return it != stations.end() ? &(*it) : nullptr;
+}
+
+// Геттер для сети
+GasNetwork* DataManager::getNetwork() {
+    return network;
+}
+
+const GasNetwork* DataManager::getNetwork() const {
+    return network;
 }

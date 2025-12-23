@@ -5,12 +5,19 @@
 #include <string>
 #include <set>
 
+// Предварительное объявление
+class GasNetwork;
+
 class DataManager {
 private:
     std::vector<Tube> tubes;
     std::vector<Cs> stations;
+    GasNetwork* network;
 
 public:
+    DataManager();
+    ~DataManager();
+
     // Методы для труб
     void addTube();
     void editTube(int id);
@@ -29,6 +36,12 @@ public:
     void batchEditTubes(const std::vector<int>& tubeIds);
     void batchDeleteTubes(const std::vector<int>& tubeIds);
 
+    // НОВЫЕ МЕТОДЫ ДЛЯ СЕТИ
+    void connectStations();
+    void disconnectStations();
+    void showNetwork();
+    void topologicalSort();
+
     // Отображение
     void displayAll() const;
 
@@ -38,5 +51,12 @@ public:
 
     // Получение объектов по ID
     Tube* getTubeById(int id);
+    const Tube* getTubeById(int id) const;
+
     Cs* getStationById(int id);
+    const Cs* getStationById(int id) const;
+
+    // Геттер для сети
+    GasNetwork* getNetwork();
+    const GasNetwork* getNetwork() const;
 };

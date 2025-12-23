@@ -21,6 +21,13 @@ public:
     std::string getStationClass() const;
     double getUnusedPercentage() const;
 
+    // Сеттеры (добавляем новые)
+    void setId(int newId);
+    void setName(const std::string& n);
+    void setTotalWorkshops(int total);
+    void setWorkingWorkshops(int working);
+    void setStationClass(const std::string& cls);
+
     // Методы
     void input();
     void edit();

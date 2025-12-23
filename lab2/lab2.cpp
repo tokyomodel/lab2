@@ -18,8 +18,12 @@ void showMenu() {
     std::cout << "9. Поиск КС\n";
     std::cout << "10. Пакетное редактирование труб\n";
     std::cout << "11. Пакетное удаление труб\n";
-    std::cout << "12. Сохранить\n";
-    std::cout << "13. Загрузить\n";
+    std::cout << "12. Соединить КС\n";
+    std::cout << "13. Отсоединить КС\n";
+    std::cout << "14. Показать сеть\n";
+    std::cout << "15. Топологическая сортировка\n";
+    std::cout << "16. Сохранить\n";
+    std::cout << "17. Загрузить\n";
     std::cout << "0. Выход\n";
     std::cout << "Выберите действие: ";
 }
@@ -34,7 +38,7 @@ void menu() {
         std::getline(std::cin, input);
 
         if (input.empty() || !std::all_of(input.begin(), input.end(), ::isdigit)) {
-            std::cout << "Ошибка! Введите число от 0 до 13\n";
+            std::cout << "Ошибка! Введите число от 0 до 17\n";
             continue;
         }
 
@@ -139,14 +143,26 @@ void menu() {
             dataManager.batchDeleteTubes(foundTubes);
             break;
         }
-        case 12: {
+        case 12:
+            dataManager.connectStations();
+            break;
+        case 13:
+            dataManager.disconnectStations();
+            break;
+        case 14:
+            dataManager.showNetwork();
+            break;
+        case 15:
+            dataManager.topologicalSort();
+            break;
+        case 16: {
             std::string filename;
             std::cout << "Введите имя файла для сохранения: ";
             std::getline(std::cin, filename);
             dataManager.saveToFile(filename);
             break;
         }
-        case 13: {
+        case 17: {
             std::string filename;
             std::cout << "Введите имя файла для загрузки: ";
             std::getline(std::cin, filename);
