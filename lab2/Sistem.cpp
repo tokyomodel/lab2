@@ -1,4 +1,4 @@
-#include "Sistem.h"
+п»ї#include "Sistem.h"
 #include "GasNetwork.h"
 #include "Loger.h"
 #include <iostream>
@@ -6,6 +6,7 @@
 #include <sstream>
 #include <algorithm>
 #include <set>
+
 
 DataManager::DataManager() {
     network = new GasNetwork();
@@ -15,7 +16,7 @@ DataManager::~DataManager() {
     delete network;
 }
 
-// Методы для труб
+// РњРµС‚РѕРґС‹ РґР»СЏ С‚СЂСѓР±
 void DataManager::addTube() {
     Tube tube;
     tube.input();
@@ -28,23 +29,154 @@ void DataManager::editTube(int id) {
         it->edit();
     }
     else {
-        std::cout << "Труба с ID " << id << " не найдена!\n";
+        std::cout << "РўСЂСѓР±Р° СЃ ID " << id << " РЅРµ РЅР°Р№РґРµРЅР°!\n";
     }
 }
 
 void DataManager::deleteTube(int id) {
     auto it = std::find_if(tubes.begin(), tubes.end(), [id](const Tube& t) { return t.getId() == id; });
     if (it != tubes.end()) {
-        logger.log("Удалена труба ID: " + std::to_string(id));
+        logger.log("РЈРґР°Р»РµРЅР° С‚СЂСѓР±Р° ID: " + std::to_string(id));
         tubes.erase(it);
-        std::cout << "Труба удалена!\n";
+        std::cout << "РўСЂСѓР±Р° СѓРґР°Р»РµРЅР°!\n";
     }
     else {
-        std::cout << "Труба с ID " << id << " не найдена!\n";
+        std::cout << "РўСЂСѓР±Р° СЃ ID " << id << " РЅРµ РЅР°Р№РґРµРЅР°!\n";
     }
 }
+void DataManager::calculateMaxFlow() {
+    std::cout << "=== Р РђРЎР§Р•Рў РњРђРљРЎРРњРђР›Р¬РќРћР“Рћ РџРћРўРћРљРђ ===\n";
 
-// Методы для КС
+    if (stations.size() < 2) {
+        std::cout << "РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РљРЎ РґР»СЏ СЂР°СЃС‡РµС‚Р° РїРѕС‚РѕРєР°! РќСѓР¶РЅРѕ РјРёРЅРёРјСѓРј 2.\n";
+        return;
+    }
+
+    int sourceId = Tube::inputInt("Р’РІРµРґРёС‚Рµ ID РљРЎ-РёСЃС‚РѕС‡РЅРёРєР°: ", 1);
+    int sinkId = Tube::inputInt("Р’РІРµРґРёС‚Рµ ID РљРЎ-СЃС‚РѕРєР°: ", 1);
+
+    // РџСЂРѕРІРµСЂСЏРµРј СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёРµ РљРЎ
+    if (!getStationById(sourceId) || !getStationById(sinkId)) {
+        std::cout << "РћРґРЅР° РёР»Рё РѕР±Рµ РљРЎ РЅРµ РЅР°Р№РґРµРЅС‹!\n";
+        return;
+    }
+
+    if (sourceId == sinkId) {
+        std::cout << "РСЃС‚РѕС‡РЅРёРє Рё СЃС‚РѕРє РЅРµ РјРѕРіСѓС‚ Р±С‹С‚СЊ РѕРґРёРЅР°РєРѕРІС‹РјРё!\n";
+        return;
+    }
+
+    // Р Р°СЃСЃС‡РёС‚С‹РІР°РµРј РјР°РєСЃРёРјР°Р»СЊРЅС‹Р№ РїРѕС‚РѕРє
+    int maxFlow = network->calculateMaxFlow(sourceId, sinkId, *this);
+
+    std::cout << "\n=== Р Р•Р—РЈР›Р¬РўРђРў Р РђРЎР§Р•РўРђ ===\n";
+    std::cout << "РљРЎ-РёСЃС‚РѕС‡РЅРёРє: " << sourceId;
+    if (auto source = getStationById(sourceId)) {
+        std::cout << " (" << source->getName() << ")";
+    }
+    std::cout << "\n";
+
+    std::cout << "РљРЎ-СЃС‚РѕРє: " << sinkId;
+    if (auto sink = getStationById(sinkId)) {
+        std::cout << " (" << sink->getName() << ")";
+    }
+    std::cout << "\n";
+
+    std::cout << "РњР°РєСЃРёРјР°Р»СЊРЅС‹Р№ РїРѕС‚РѕРє: " << maxFlow << " Рј3/С‡Р°СЃ\n";  
+
+    if (maxFlow == 0) {
+        std::cout << "Р’РЅРёРјР°РЅРёРµ: РїРѕС‚РѕРє СЂР°РІРµРЅ 0. РџСЂРѕРІРµСЂСЊС‚Рµ СЃРѕРµРґРёРЅРµРЅРёСЏ Рё СЃРѕСЃС‚РѕСЏРЅРёРµ С‚СЂСѓР±.\n";
+    }
+
+    // Р›РѕРіРёСЂСѓРµРј СЂР°СЃС‡РµС‚
+    logger.log("Р Р°СЃС‡РµС‚ РјР°РєСЃРёРјР°Р»СЊРЅРѕРіРѕ РїРѕС‚РѕРєР°: РљРЎ " + std::to_string(sourceId) +
+        " -> РљРЎ " + std::to_string(sinkId) + " = " +
+        std::to_string(maxFlow) + " Рј3/С‡Р°СЃ"); 
+}
+
+void DataManager::findShortestPath() {
+    std::cout << "=== РџРћРРЎРљ РљР РђРўР§РђР™РЁР•Р“Рћ РџРЈРўР ===\n";
+
+    if (stations.size() < 2) {
+        std::cout << "РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РљРЎ РґР»СЏ РїРѕРёСЃРєР° РїСѓС‚Рё! РќСѓР¶РЅРѕ РјРёРЅРёРјСѓРј 2.\n";
+        return;
+    }
+
+    int startId = Tube::inputInt("Р’РІРµРґРёС‚Рµ ID РЅР°С‡Р°Р»СЊРЅРѕР№ РљРЎ: ", 1);
+    int endId = Tube::inputInt("Р’РІРµРґРёС‚Рµ ID РєРѕРЅРµС‡РЅРѕР№ РљРЎ: ", 1);
+
+    // РџСЂРѕРІРµСЂСЏРµРј СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёРµ РљРЎ
+    if (!getStationById(startId) || !getStationById(endId)) {
+        std::cout << "РћРґРЅР° РёР»Рё РѕР±Рµ РљРЎ РЅРµ РЅР°Р№РґРµРЅС‹!\n";
+        return;
+    }
+
+    if (startId == endId) {
+        std::cout << "РќР°С‡Р°Р»СЊРЅР°СЏ Рё РєРѕРЅРµС‡РЅР°СЏ РљРЎ РЅРµ РјРѕРіСѓС‚ Р±С‹С‚СЊ РѕРґРёРЅР°РєРѕРІС‹РјРё!\n";
+        return;
+    }
+
+    // РС‰РµРј РєСЂР°С‚С‡Р°Р№С€РёР№ РїСѓС‚СЊ
+    auto path = network->findShortestPath(startId, endId, *this);
+
+    std::cout << "\n=== Р Р•Р—РЈР›Р¬РўРђРў РџРћРРЎРљРђ ===\n";
+    std::cout << "РќР°С‡Р°Р»СЊРЅР°СЏ РљРЎ: " << startId;
+    if (auto start = getStationById(startId)) {
+        std::cout << " (" << start->getName() << ")";
+    }
+    std::cout << "\n";
+
+    std::cout << "РљРѕРЅРµС‡РЅР°СЏ РљРЎ: " << endId;
+    if (auto end = getStationById(endId)) {
+        std::cout << " (" << end->getName() << ")";
+    }
+    std::cout << "\n";
+
+    if (path.empty()) {
+        std::cout << "РџСѓС‚СЊ РЅРµ РЅР°Р№РґРµРЅ! Р’РѕР·РјРѕР¶РЅС‹Рµ РїСЂРёС‡РёРЅС‹:\n";
+        std::cout << "1. РќРµС‚ СЃРѕРµРґРёРЅРµРЅРёСЏ РјРµР¶РґСѓ РљРЎ\n";
+        std::cout << "2. Р’СЃРµ С‚СЂСѓР±С‹ РЅР° РїСѓС‚Рё РІ СЂРµРјРѕРЅС‚Рµ\n";
+        std::cout << "3. Р“СЂР°С„ РЅРµСЃРІСЏР·РЅС‹Р№\n";
+    }
+    else {
+        std::cout << "РљСЂР°С‚С‡Р°Р№С€РёР№ РїСѓС‚СЊ (РїРѕ РґР»РёРЅРµ С‚СЂСѓР±):\n";
+        double totalLength = 0;
+
+        for (size_t i = 0; i < path.size(); i++) {
+            std::cout << path[i];
+            if (auto station = getStationById(path[i])) {
+                std::cout << " (" << station->getName() << ")";
+            }
+
+            if (i < path.size() - 1) {
+                // РќР°С…РѕРґРёРј С‚СЂСѓР±Сѓ РјРµР¶РґСѓ С‚РµРєСѓС‰РµР№ Рё СЃР»РµРґСѓСЋС‰РµР№ РљРЎ
+                const auto* conn = network->getConnection(path[i], path[i + 1]);
+                if (conn) {
+                    const Tube* tube = getTubeById(conn->tubeId);
+                    if (tube) {
+                        std::cout << " --[" << tube->getLength() << " РєРј]--> ";
+                        totalLength += tube->getLength();
+                    }
+                }
+            }
+            else {
+                std::cout << "\n";
+            }
+        }
+
+        std::cout << "РћР±С‰Р°СЏ РґР»РёРЅР° РїСѓС‚Рё: " << totalLength << " РєРј\n";
+
+        // Р›РѕРіРёСЂСѓРµРј РїРѕРёСЃРє
+        std::string logPath;
+        for (int id : path) {
+            logPath += std::to_string(id) + " ";
+        }
+        logger.log("РџРѕРёСЃРє РєСЂР°С‚С‡Р°Р№С€РµРіРѕ РїСѓС‚Рё: " + std::to_string(startId) +
+            " -> " + std::to_string(endId) + " = " + logPath +
+            " (РґР»РёРЅР°: " + std::to_string(totalLength) + " РєРј)");
+    }
+}
+// РњРµС‚РѕРґС‹ РґР»СЏ РљРЎ
 void DataManager::addStation() {
     Cs station;
     station.input();
@@ -57,23 +189,23 @@ void DataManager::editStation(int id) {
         it->edit();
     }
     else {
-        std::cout << "КС с ID " << id << " не найдена!\n";
+        std::cout << "РљРЎ СЃ ID " << id << " РЅРµ РЅР°Р№РґРµРЅР°!\n";
     }
 }
 
 void DataManager::deleteStation(int id) {
     auto it = std::find_if(stations.begin(), stations.end(), [id](const Cs& s) { return s.getId() == id; });
     if (it != stations.end()) {
-        logger.log("Удалена КС ID: " + std::to_string(id));
+        logger.log("РЈРґР°Р»РµРЅР° РљРЎ ID: " + std::to_string(id));
         stations.erase(it);
-        std::cout << "КС удалена!\n";
+        std::cout << "РљРЎ СѓРґР°Р»РµРЅР°!\n";
     }
     else {
-        std::cout << "КС с ID " << id << " не найдена!\n";
+        std::cout << "РљРЎ СЃ ID " << id << " РЅРµ РЅР°Р№РґРµРЅР°!\n";
     }
 }
 
-// Поиск
+// РџРѕРёСЃРє
 std::vector<int> DataManager::findTubes(const std::string& nameFilter, bool repairFilter) {
     std::vector<int> result;
     for (const auto& tube : tubes) {
@@ -94,14 +226,14 @@ std::vector<int> DataManager::findStations(const std::string& nameFilter, double
     return result;
 }
 
-// Пакетные операции
+// РџР°РєРµС‚РЅС‹Рµ РѕРїРµСЂР°С†РёРё
 void DataManager::batchEditTubes(const std::vector<int>& tubeIds) {
     if (tubeIds.empty()) {
-        std::cout << "Нет труб для редактирования!\n";
+        std::cout << "РќРµС‚ С‚СЂСѓР± РґР»СЏ СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёСЏ!\n";
         return;
     }
 
-    std::cout << "Найдено труб: " << tubeIds.size() << "\n";
+    std::cout << "РќР°Р№РґРµРЅРѕ С‚СЂСѓР±: " << tubeIds.size() << "\n";
     for (int id : tubeIds) {
         auto it = std::find_if(tubes.begin(), tubes.end(), [id](const Tube& t) { return t.getId() == id; });
         if (it != tubes.end()) {
@@ -109,16 +241,16 @@ void DataManager::batchEditTubes(const std::vector<int>& tubeIds) {
         }
     }
 
-    int choice = Cs::inputIntRange("1. Редактировать все\n2. Выбрать конкретные\nВыберите действие: ", 1, 2);
+    int choice = Cs::inputIntRange("1. Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ РІСЃРµ\n2. Р’С‹Р±СЂР°С‚СЊ РєРѕРЅРєСЂРµС‚РЅС‹Рµ\nР’С‹Р±РµСЂРёС‚Рµ РґРµР№СЃС‚РІРёРµ: ", 1, 2);
 
     if (choice == 1) {
         for (int id : tubeIds) {
             editTube(id);
         }
-        logger.log("Пакетное редактирование всех найденных труб (" + std::to_string(tubeIds.size()) + " шт.)");
+        logger.log("РџР°РєРµС‚РЅРѕРµ СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ РІСЃРµС… РЅР°Р№РґРµРЅРЅС‹С… С‚СЂСѓР± (" + std::to_string(tubeIds.size()) + " С€С‚.)");
     }
     else {
-        std::cout << "Введите ID труб для редактирования (через пробел, 0 для завершения): ";
+        std::cout << "Р’РІРµРґРёС‚Рµ ID С‚СЂСѓР± РґР»СЏ СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёСЏ (С‡РµСЂРµР· РїСЂРѕР±РµР», 0 РґР»СЏ Р·Р°РІРµСЂС€РµРЅРёСЏ): ";
         std::string input;
         std::getline(std::cin, input);
         std::stringstream ss(input);
@@ -134,62 +266,61 @@ void DataManager::batchEditTubes(const std::vector<int>& tubeIds) {
         for (int id : selectedIds) {
             editTube(id);
         }
-        logger.log("Пакетное редактирование выбранных труб (" + std::to_string(selectedIds.size()) + " шт.)");
+        logger.log("РџР°РєРµС‚РЅРѕРµ СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ РІС‹Р±СЂР°РЅРЅС‹С… С‚СЂСѓР± (" + std::to_string(selectedIds.size()) + " С€С‚.)");
     }
 }
 
 void DataManager::batchDeleteTubes(const std::vector<int>& tubeIds) {
     if (tubeIds.empty()) {
-        std::cout << "Нет труб для удаления!\n";
+        std::cout << "РќРµС‚ С‚СЂСѓР± РґР»СЏ СѓРґР°Р»РµРЅРёСЏ!\n";
         return;
     }
 
-    std::cout << "Будет удалено труб: " << tubeIds.size() << "\n";
+    std::cout << "Р‘СѓРґРµС‚ СѓРґР°Р»РµРЅРѕ С‚СЂСѓР±: " << tubeIds.size() << "\n";
     std::string confirm;
-    std::cout << "Подтвердите удаление (yes/no): ";
+    std::cout << "РџРѕРґС‚РІРµСЂРґРёС‚Рµ СѓРґР°Р»РµРЅРёРµ (yes/no): ";
     std::getline(std::cin, confirm);
 
     if (confirm == "yes") {
         for (int id : tubeIds) {
             deleteTube(id);
         }
-        logger.log("Пакетное удаление труб (" + std::to_string(tubeIds.size()) + " шт.)");
+        logger.log("РџР°РєРµС‚РЅРѕРµ СѓРґР°Р»РµРЅРёРµ С‚СЂСѓР± (" + std::to_string(tubeIds.size()) + " С€С‚.)");
     }
 }
 
-// НОВЫЕ МЕТОДЫ ДЛЯ СЕТИ
 void DataManager::connectStations() {
-    std::cout << "=== СОЕДИНЕНИЕ КС ===\n";
+    std::cout << "=== РЎРћР•Р”РРќР•РќРР• РљРЎ ===\n";
 
     if (stations.size() < 2) {
-        std::cout << "Недостаточно КС для соединения! Нужно минимум 2.\n";
+        std::cout << "РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РљРЎ РґР»СЏ СЃРѕРµРґРёРЅРµРЅРёСЏ! РќСѓР¶РЅРѕ РјРёРЅРёРјСѓРј 2.\n";
         return;
     }
 
-    int fromId = Tube::inputInt("Введите ID КС входа: ", 1);
-    int toId = Tube::inputInt("Введите ID КС выхода: ", 1);
+    int fromId = Tube::inputInt("Р’РІРµРґРёС‚Рµ ID РљРЎ РІС…РѕРґР°: ", 1);
+    int toId = Tube::inputInt("Р’РІРµРґРёС‚Рµ ID РљРЎ РІС‹С…РѕРґР°: ", 1);
 
-    // Проверяем существование КС
+    // РџСЂРѕРІРµСЂСЏРµРј СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёРµ РљРЎ
     if (!getStationById(fromId) || !getStationById(toId)) {
-        std::cout << "Одна или обе КС не найдены!\n";
+        std::cout << "РћРґРЅР° РёР»Рё РѕР±Рµ РљРЎ РЅРµ РЅР°Р№РґРµРЅС‹!\n";
         return;
     }
 
     if (fromId == toId) {
-        std::cout << "Нельзя соединить КС саму с собой!\n";
+        std::cout << "РќРµР»СЊР·СЏ СЃРѕРµРґРёРЅРёС‚СЊ РљРЎ СЃР°РјСѓ СЃ СЃРѕР±РѕР№!\n";
         return;
     }
 
-    // Запрашиваем диаметр
-    std::cout << "Введите диаметр трубы (500, 700, 1000 или 1400 мм): ";
+    // Р—Р°РїСЂР°С€РёРІР°РµРј РґРёР°РјРµС‚СЂ
+    std::cout << "Р’РІРµРґРёС‚Рµ РґРёР°РјРµС‚СЂ С‚СЂСѓР±С‹ (500, 700, 1000 РёР»Рё 1400 РјРј): ";
     int diameter = Tube::inputInt("", 500);
 
-    // Ищем свободную трубу
+    // РС‰РµРј СЃРІРѕР±РѕРґРЅСѓСЋ С‚СЂСѓР±Сѓ
     int tubeId = network->findFreeTube(diameter, tubes);
 
     if (tubeId == -1) {
-        std::cout << "Свободной трубы нужного диаметра не найдено.\n";
-        std::cout << "Создать новую трубу? (yes/no): ";
+        std::cout << "РЎРІРѕР±РѕРґРЅРѕР№ С‚СЂСѓР±С‹ РЅСѓР¶РЅРѕРіРѕ РґРёР°РјРµС‚СЂР° РЅРµ РЅР°Р№РґРµРЅРѕ.\n";
+        std::cout << "РЎРѕР·РґР°С‚СЊ РЅРѕРІСѓСЋ С‚СЂСѓР±Сѓ? (yes/no): ";
         std::string answer;
         std::getline(std::cin, answer);
 
@@ -200,17 +331,17 @@ void DataManager::connectStations() {
             newTube.setUnderRepair(false);
             tubes.push_back(newTube);
             tubeId = newTube.getId();
-            std::cout << "Создана новая труба ID: " << tubeId << "\n";
+            std::cout << "РЎРѕР·РґР°РЅР° РЅРѕРІР°СЏ С‚СЂСѓР±Р° ID: " << tubeId << "\n";
         }
         else {
             return;
         }
     }
 
-    // Добавляем соединение
+    // Р”РѕР±Р°РІР»СЏРµРј СЃРѕРµРґРёРЅРµРЅРёРµ
     network->addConnection(fromId, toId, tubeId, diameter);
 
-    // Помечаем трубу как используемую
+    // РџРѕРјРµС‡Р°РµРј С‚СЂСѓР±Сѓ РєР°Рє РёСЃРїРѕР»СЊР·СѓРµРјСѓСЋ
     auto tube = getTubeById(tubeId);
     if (tube) {
         tube->setUnderRepair(false);
@@ -218,10 +349,10 @@ void DataManager::connectStations() {
 }
 
 void DataManager::disconnectStations() {
-    std::cout << "=== ОТСОЕДИНЕНИЕ КС ===\n";
+    std::cout << "=== РћРўРЎРћР•Р”РРќР•РќРР• РљРЎ ===\n";
 
-    int fromId = Tube::inputInt("Введите ID КС входа: ", 1);
-    int toId = Tube::inputInt("Введите ID КС выхода: ", 1);
+    int fromId = Tube::inputInt("Р’РІРµРґРёС‚Рµ ID РљРЎ РІС…РѕРґР°: ", 1);
+    int toId = Tube::inputInt("Р’РІРµРґРёС‚Рµ ID РљРЎ РІС‹С…РѕРґР°: ", 1);
 
     network->removeConnection(fromId, toId);
 }
@@ -231,19 +362,19 @@ void DataManager::showNetwork() {
 }
 
 void DataManager::topologicalSort() {
-    std::cout << "=== ТОПОЛОГИЧЕСКАЯ СОРТИРОВКА ===\n";
+    std::cout << "=== РўРћРџРћР›РћР“РР§Р•РЎРљРђРЇ РЎРћР РўРР РћР’РљРђ ===\n";
 
     auto sorted = network->topologicalSort();
 
     if (sorted.empty()) {
-        std::cout << "Граф пуст или содержит циклы.\n";
+        std::cout << "Р“СЂР°С„ РїСѓСЃС‚ РёР»Рё СЃРѕРґРµСЂР¶РёС‚ С†РёРєР»С‹.\n";
         return;
     }
 
-    std::cout << "Порядок обработки КС:\n";
+    std::cout << "РџРѕСЂСЏРґРѕРє РѕР±СЂР°Р±РѕС‚РєРё РљРЎ:\n";
     for (size_t i = 0; i < sorted.size(); i++) {
         const Cs* station = getStationById(sorted[i]);
-        std::cout << i + 1 << ". КС " << sorted[i];
+        std::cout << i + 1 << ". РљРЎ " << sorted[i];
         if (station) {
             std::cout << " (" << station->getName() << ")";
         }
@@ -251,11 +382,11 @@ void DataManager::topologicalSort() {
     }
 }
 
-// Отображение
+// РћС‚РѕР±СЂР°Р¶РµРЅРёРµ
 void DataManager::displayAll() const {
-    std::cout << "=== ТРУБЫ ===\n";
+    std::cout << "=== РўР РЈР‘Р« ===\n";
     if (tubes.empty()) {
-        std::cout << "Трубы не добавлены\n";
+        std::cout << "РўСЂСѓР±С‹ РЅРµ РґРѕР±Р°РІР»РµРЅС‹\n";
     }
     else {
         for (const auto& tube : tubes) {
@@ -263,9 +394,9 @@ void DataManager::displayAll() const {
         }
     }
 
-    std::cout << "=== КОМПРЕССОРНЫЕ СТАНЦИИ ===\n";
+    std::cout << "=== РљРћРњРџР Р•РЎРЎРћР РќР«Р• РЎРўРђРќР¦РР ===\n";
     if (stations.empty()) {
-        std::cout << "КС не добавлены\n";
+        std::cout << "РљРЎ РЅРµ РґРѕР±Р°РІР»РµРЅС‹\n";
     }
     else {
         for (const auto& station : stations) {
@@ -276,15 +407,15 @@ void DataManager::displayAll() const {
     std::cout << "----------------------\n";
 }
 
-// Работа с файлами
+// Р Р°Р±РѕС‚Р° СЃ С„Р°Р№Р»Р°РјРё
 void DataManager::saveToFile(const std::string& filename) {
     std::ofstream file(filename);
     if (!file.is_open()) {
-        std::cout << "Ошибка открытия файла для записи!\n";
+        std::cout << "РћС€РёР±РєР° РѕС‚РєСЂС‹С‚РёСЏ С„Р°Р№Р»Р° РґР»СЏ Р·Р°РїРёСЃРё!\n";
         return;
     }
 
-    // Сохраняем трубы
+    // РЎРѕС…СЂР°РЅСЏРµРј С‚СЂСѓР±С‹
     file << tubes.size() << "\n";
     for (const auto& tube : tubes) {
         file << tube.getId() << "\n"
@@ -294,7 +425,7 @@ void DataManager::saveToFile(const std::string& filename) {
             << tube.isUnderRepair() << "\n";
     }
 
-    // Сохраняем КС
+    // РЎРѕС…СЂР°РЅСЏРµРј РљРЎ
     file << stations.size() << "\n";
     for (const auto& station : stations) {
         file << station.getId() << "\n"
@@ -304,7 +435,7 @@ void DataManager::saveToFile(const std::string& filename) {
             << station.getStationClass() << "\n";
     }
 
-    // Сохраняем соединения
+    // РЎРѕС…СЂР°РЅСЏРµРј СЃРѕРµРґРёРЅРµРЅРёСЏ
     const auto& conns = network->getConnections();
     file << conns.size() << "\n";
     for (const auto& conn : conns) {
@@ -315,14 +446,14 @@ void DataManager::saveToFile(const std::string& filename) {
     }
 
     file.close();
-    std::cout << "Данные сохранены в файл: " << filename << "\n";
-    logger.log("Сохранение данных в файл: " + filename);
+    std::cout << "Р”Р°РЅРЅС‹Рµ СЃРѕС…СЂР°РЅРµРЅС‹ РІ С„Р°Р№Р»: " << filename << "\n";
+    logger.log("РЎРѕС…СЂР°РЅРµРЅРёРµ РґР°РЅРЅС‹С… РІ С„Р°Р№Р»: " + filename);
 }
 
 void DataManager::loadFromFile(const std::string& filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {
-        std::cout << "Ошибка открытия файла для чтения!\n";
+        std::cout << "РћС€РёР±РєР° РѕС‚РєСЂС‹С‚РёСЏ С„Р°Р№Р»Р° РґР»СЏ С‡С‚РµРЅРёСЏ!\n";
         return;
     }
 
@@ -331,7 +462,7 @@ void DataManager::loadFromFile(const std::string& filename) {
     delete network;
     network = new GasNetwork();
 
-    // Загружаем трубы
+    // Р—Р°РіСЂСѓР¶Р°РµРј С‚СЂСѓР±С‹
     int tubeCount;
     file >> tubeCount;
     file.ignore();
@@ -356,7 +487,7 @@ void DataManager::loadFromFile(const std::string& filename) {
         tubes.push_back(tube);
     }
 
-    // Загружаем КС
+    // Р—Р°РіСЂСѓР¶Р°РµРј РљРЎ
     int stationCount;
     file >> stationCount;
     file.ignore();
@@ -383,7 +514,7 @@ void DataManager::loadFromFile(const std::string& filename) {
         stations.push_back(station);
     }
 
-    // Загружаем соединения
+    // Р—Р°РіСЂСѓР¶Р°РµРј СЃРѕРµРґРёРЅРµРЅРёСЏ
     int connCount;
     file >> connCount;
     file.ignore();
@@ -395,11 +526,11 @@ void DataManager::loadFromFile(const std::string& filename) {
     }
 
     file.close();
-    std::cout << "Данные загружены из файла: " << filename << "\n";
-    logger.log("Загрузка данных из файла: " + filename);
+    std::cout << "Р”Р°РЅРЅС‹Рµ Р·Р°РіСЂСѓР¶РµРЅС‹ РёР· С„Р°Р№Р»Р°: " << filename << "\n";
+    logger.log("Р—Р°РіСЂСѓР·РєР° РґР°РЅРЅС‹С… РёР· С„Р°Р№Р»Р°: " + filename);
 }
 
-// Получение объектов по ID
+// РџРѕР»СѓС‡РµРЅРёРµ РѕР±СЉРµРєС‚РѕРІ РїРѕ ID
 Tube* DataManager::getTubeById(int id) {
     auto it = std::find_if(tubes.begin(), tubes.end(), [id](const Tube& t) { return t.getId() == id; });
     return it != tubes.end() ? &(*it) : nullptr;
@@ -420,7 +551,7 @@ const Cs* DataManager::getStationById(int id) const {
     return it != stations.end() ? &(*it) : nullptr;
 }
 
-// Геттер для сети
+// Р“РµС‚С‚РµСЂ РґР»СЏ СЃРµС‚Рё
 GasNetwork* DataManager::getNetwork() {
     return network;
 }

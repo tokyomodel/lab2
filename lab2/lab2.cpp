@@ -8,11 +8,11 @@
 void showMenu() {
     std::cout << "\n=== ГЛАВНОЕ МЕНЮ ===\n";
     std::cout << "1. Добавить трубу\n";
-    std::cout << "2. Добавить КС\n"; 
+    std::cout << "2. Добавить КС\n";
     std::cout << "3. Просмотр всех объектов\n";
     std::cout << "4. Редактировать трубу\n";
     std::cout << "5. Редактировать КС\n";
-    std::cout << "6. Удалить трубу\n"; 
+    std::cout << "6. Удалить трубу\n";
     std::cout << "7. Удалить КС\n";
     std::cout << "8. Поиск труб\n";
     std::cout << "9. Поиск КС\n";
@@ -22,8 +22,10 @@ void showMenu() {
     std::cout << "13. Отсоединить КС\n";
     std::cout << "14. Показать сеть\n";
     std::cout << "15. Топологическая сортировка\n";
-    std::cout << "16. Сохранить\n";
-    std::cout << "17. Загрузить\n";
+    std::cout << "16. Расчет максимального потока\n"; 
+    std::cout << "17. Поиск кратчайшего пути\n";  
+    std::cout << "18. Сохранить\n";
+    std::cout << "19. Загрузить\n";
     std::cout << "0. Выход\n";
     std::cout << "Выберите действие: ";
 }
@@ -38,7 +40,7 @@ void menu() {
         std::getline(std::cin, input);
 
         if (input.empty() || !std::all_of(input.begin(), input.end(), ::isdigit)) {
-            std::cout << "Ошибка! Введите число от 0 до 17\n";
+            std::cout << "Ошибка! Введите число от 0 до 19\n";
             continue;
         }
 
@@ -155,14 +157,20 @@ void menu() {
         case 15:
             dataManager.topologicalSort();
             break;
-        case 16: {
+        case 16:  
+            dataManager.calculateMaxFlow();
+            break;
+        case 17: 
+            dataManager.findShortestPath();
+            break;
+        case 18: { 
             std::string filename;
             std::cout << "Введите имя файла для сохранения: ";
             std::getline(std::cin, filename);
             dataManager.saveToFile(filename);
             break;
         }
-        case 17: {
+        case 19: { 
             std::string filename;
             std::cout << "Введите имя файла для загрузки: ";
             std::getline(std::cin, filename);
@@ -171,6 +179,8 @@ void menu() {
         }
         case 0:
             std::cout << "Выход из программы...\n";
+            std::cout << "Нажмите Enter для выхода...";
+            std::cin.ignore();
             return;
         default:
             std::cout << "Неверный выбор! Попробуйте снова.\n";

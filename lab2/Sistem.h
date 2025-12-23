@@ -5,7 +5,6 @@
 #include <string>
 #include <set>
 
-// Предварительное объявление
 class GasNetwork;
 
 class DataManager {
@@ -36,11 +35,14 @@ public:
     void batchEditTubes(const std::vector<int>& tubeIds);
     void batchDeleteTubes(const std::vector<int>& tubeIds);
 
-    // НОВЫЕ МЕТОДЫ ДЛЯ СЕТИ
+    // Методы для сети
     void connectStations();
     void disconnectStations();
     void showNetwork();
     void topologicalSort();
+
+    void calculateMaxFlow();
+    void findShortestPath();
 
     // Отображение
     void displayAll() const;
